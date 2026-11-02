@@ -123,23 +123,50 @@ const deleteCustomer = asyncHandler(async (req, res) => {
   res.json({ message: 'Customer data anonymized successfully', id: customer.id });
 });
 
-// @desc    Get orders for a specific customer
+// @desc    Get orders for a specific customer (admin OR the customer themselves)
 // @route   GET /api/customers/:id/orders
-// @access  Private
+// @access  Admin or the owning Customer (via protectSelf)
 const getCustomerOrders = asyncHandler(async (req, res) => {
-  const kitchenId = req.user.kitchenId;
   const { id } = req.params;
+  const { limit = 30, page = 1 } = req.query;
 
-  const orders = await prisma.order.findMany({
-    where: { customerId: id, kitchenId },
-    include: {
-      items: { include: { menuItem: { select: { name: true } } } }
-    },
-    orderBy: { placedAt: 'desc' },
-    take: 20,
-  });
+  // Lookup customer to get phone/email if possible
+  let customer = await prisma.customer.findUnique({ where: { id } });
+  if (!customer && req.user?.customerId) {
+    customer = await prisma.customer.findUnique({ where: { id: req.user.customerId } });
+  }
 
-  res.json(orders);
+  const where = {
+    OR: [
+      { customerId: id },
+      ...(customer ? [{ customerId: customer.id }] : []),
+      ...(customer?.phone ? [
+        { customer: { phone: customer.phone } },
+        { customer: { phone: customer.phone.replace(/^\+91\s*/, '') } }
+      ] : [])
+    ]
+  };
+
+  const [orders, total] = await prisma.$transaction([
+    prisma.order.findMany({
+      where,
+      include: {
+        customer: true,
+        items: {
+          include: {
+            menuItem: { select: { id: true, name: true, price: true, imageUrl: true } }
+          }
+        }
+      },
+      orderBy: { placedAt: 'desc' },
+      take: parseInt(limit),
+      skip: (parseInt(page) - 1) * parseInt(limit),
+    }),
+    prisma.order.count({ where }),
+  ]);
+
+  res.json({ orders, total, page: parseInt(page), limit: parseInt(limit) });
 });
 
 module.exports = { getCustomers, createCustomer, updateCustomer, deleteCustomer, getCustomerOrders };
+

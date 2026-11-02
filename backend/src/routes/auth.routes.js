@@ -1,13 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
+const { protect } = require('../middleware/auth.middleware');
 
-// @route   POST /api/auth/login
-// @desc    Authenticate user & get token
-// @access  Public
-router.post('/login', authController.login);
-
-// We will add the auth middleware later to protect /me
-// router.get('/me', authMiddleware, authController.getMe);
+router.post('/login',             authController.login);
+router.post('/customer/register', authController.registerCustomer);
+router.post('/customer/login',    authController.customerLogin);
+router.get('/me', protect,        authController.getMe);
 
 module.exports = router;

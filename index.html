@@ -1,0 +1,487 @@
+
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Darshana Chaudhari | Portfolio</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            accent: '#8b5cf6',
+            pinkish: '#ec4899'
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      transition: background-color .3s, color .3s;
+    }
+
+    .gradient-text {
+      background: linear-gradient(90deg, #8b5cf6, #ec4899);
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(25px);
+      transition: all .7s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .profile-image {
+      animation: float 4s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .project-card:hover {
+      transform: translateY(-7px);
+    }
+
+    .project-card {
+      transition: transform .3s, box-shadow .3s;
+    }
+
+    section {
+      scroll-margin-top: 80px;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-white">
+
+  <!-- Navigation -->
+  <header class="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur shadow-sm">
+    <nav class="max-w-6xl mx-auto px-5 py-4 flex justify-between items-center">
+      <a href="#home" class="text-2xl font-bold gradient-text">Darshana.</a>
+
+      <div class="flex items-center gap-4">
+        <div id="menu" class="hidden md:flex gap-5 text-sm font-medium">
+          <a href="#home" class="hover:text-violet-500">Home</a>
+          <a href="#about" class="hover:text-violet-500">About</a>
+          <a href="#projects" class="hover:text-violet-500">Projects</a>
+          <a href="#contact" class="hover:text-violet-500">Contact</a>
+        </div>
+
+        <button id="themeBtn" aria-label="Toggle dark mode"
+          class="rounded-full border border-slate-300 dark:border-slate-600 px-3 py-2">
+          🌙
+        </button>
+
+        <button id="menuBtn" class="md:hidden text-xl" aria-label="Open menu">
+          ☰
+        </button>
+      </div>
+    </nav>
+
+    <div id="mobileMenu" class="hidden md:hidden px-5 pb-4 space-y-3">
+      <a href="#home" class="block">Home</a>
+      <a href="#about" class="block">About</a>
+      <a href="#projects" class="block">Projects</a>
+      <a href="#contact" class="block">Contact</a>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- HOME PAGE -->
+    <section id="home" class="min-h-[85vh] flex items-center">
+      <div class="max-w-6xl mx-auto px-6 py-16 grid md:grid-cols-2 gap-12 items-center">
+
+        <div class="reveal">
+          <p class="text-violet-600 dark:text-violet-400 font-semibold mb-3">
+            HELLO, WELCOME TO MY PORTFOLIO
+          </p>
+
+          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
+            Hi, I'm <span class="gradient-text">Darshana Chaudhari</span>
+          </h1>
+
+          <h2 class="text-xl sm:text-2xl font-semibold mt-5">
+            MCA Student | Aspiring Web Developer
+          </h2>
+
+          <p class="mt-5 text-slate-600 dark:text-slate-300 leading-7">
+            I am a postgraduate student passionate about technology,
+            programming and creative problem-solving. I enjoy learning
+            new skills and developing useful web applications.
+          </p>
+
+          <div class="flex flex-wrap gap-4 mt-8">
+            <a href="#projects"
+              class="bg-violet-600 hover:bg-violet-700 text-white px-6 py-3 rounded-full transition">
+              View My Projects
+            </a>
+
+            <a href="#contact"
+              class="border border-violet-600 text-violet-600 dark:text-violet-400 px-6 py-3 rounded-full hover:bg-violet-50 dark:hover:bg-slate-800 transition">
+              Contact Me
+            </a>
+          </div>
+        </div>
+
+        <div class="flex justify-center reveal">
+          <!-- Replace this image with your own photo -->
+          <div class="profile-image w-64 h-64 sm:w-80 sm:h-80 rounded-full p-2
+                      bg-gradient-to-br from-violet-500 to-pink-500 shadow-2xl">
+            <img
+              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=700&q=80"
+              alt="Profile photo placeholder"
+              class="w-full h-full rounded-full object-cover border-4 border-white dark:border-slate-900">
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ABOUT PAGE -->
+    <section id="about" class="py-20 bg-white dark:bg-slate-900">
+      <div class="max-w-5xl mx-auto px-6">
+
+        <div class="text-center mb-12 reveal">
+          <p class="text-violet-600 font-semibold">GET TO KNOW ME</p>
+          <h2 class="text-4xl font-bold mt-2">About Me</h2>
+          <p class="mt-4 text-slate-600 dark:text-slate-300">
+            My education, technical skills and interests.
+          </p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-10">
+
+          <div class="reveal">
+            <h3 class="text-2xl font-bold mb-4">My Introduction</h3>
+            <p class="text-slate-600 dark:text-slate-300 leading-7">
+              I am currently pursuing a Master of Computer Applications
+              (MCA). I have a background in computer applications and
+              an interest in web development, databases and data analytics.
+              My goal is to improve my technical knowledge by building
+              practical projects.
+            </p>
+
+            <h3 class="text-xl font-bold mt-7 mb-3">Education</h3>
+
+            <div class="border-l-4 border-violet-500 pl-4 space-y-5">
+              <div>
+                <h4 class="font-semibold">Master of Computer Applications</h4>
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                  R. H. Sapat College of Engineering, Nashik
+                </p>
+                <p class="text-sm">Pursuing | Expected 2027</p>
+              </div>
+
+              <div>
+                <h4 class="font-semibold">Bachelor of Computer Applications</h4>
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                  P. K. Kotecha Mahila Mahavidyalaya, Bhusawal
+                </p>
+                <p class="text-sm">CGPA: 8.9</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="reveal">
+            <h3 class="text-2xl font-bold mb-5">Technical Skills</h3>
+
+            <div class="space-y-5">
+              <div>
+                <div class="flex justify-between mb-2">
+                  <span>HTML</span><span>Learning</span>
+                </div>
+                <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded-full">
+                  <div class="h-2 w-4/5 bg-violet-600 rounded-full"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between mb-2">
+                  <span>CSS / Tailwind CSS</span><span>Learning</span>
+                </div>
+                <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded-full">
+                  <div class="h-2 w-3/4 bg-pink-500 rounded-full"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between mb-2">
+                  <span>Python</span><span>Learning</span>
+                </div>
+                <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded-full">
+                  <div class="h-2 w-3/4 bg-violet-600 rounded-full"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between mb-2">
+                  <span>C Programming</span><span>Learning</span>
+                </div>
+                <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded-full">
+                  <div class="h-2 w-2/3 bg-pink-500 rounded-full"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between mb-2">
+                  <span>SQL / MySQL</span><span>Learning</span>
+                </div>
+                <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded-full">
+                  <div class="h-2 w-3/4 bg-violet-600 rounded-full"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-8">
+              <h3 class="text-xl font-bold mb-2">Interests</h3>
+              <div class="flex flex-wrap gap-2">
+                <span class="px-4 py-2 bg-violet-100 text-violet-700 rounded-full">Web Development</span>
+                <span class="px-4 py-2 bg-pink-100 text-pink-700 rounded-full">Data Analytics</span>
+                <span class="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full">Drawing</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- PROJECTS PAGE -->
+    <section id="projects" class="py-20">
+      <div class="max-w-6xl mx-auto px-6">
+
+        <div class="text-center mb-12 reveal">
+          <p class="text-violet-600 font-semibold">MY WORK</p>
+          <h2 class="text-4xl font-bold mt-2">My Projects</h2>
+          <p class="mt-4 text-slate-600 dark:text-slate-300">
+            Some projects related to my learning and academic work.
+          </p>
+        </div>
+
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-7">
+
+          <article class="project-card reveal rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-lg">
+            <div class="h-40 bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-6xl">
+              🍽️
+            </div>
+            <div class="p-6">
+              <h3 class="text-xl font-bold">CloudChef</h3>
+              <p class="mt-3 text-slate-600 dark:text-slate-300 leading-6">
+                An intelligent cloud kitchen optimization research project
+                using machine learning and data analytics for demand
+                forecasting and inventory planning.
+              </p>
+              <p class="text-sm text-violet-600 dark:text-violet-400 mt-4">
+                Python · ML · Data Analytics
+              </p>
+            </div>
+          </article>
+
+          <article class="project-card reveal rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-lg">
+            <div class="h-40 bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-6xl">
+              💻
+            </div>
+            <div class="p-6">
+              <h3 class="text-xl font-bold">Personal Portfolio</h3>
+              <p class="mt-3 text-slate-600 dark:text-slate-300 leading-6">
+                A responsive personal portfolio website presenting my
+                introduction, education, technical skills, projects
+                and contact details.
+              </p>
+              <p class="text-sm text-violet-600 dark:text-violet-400 mt-4">
+                HTML · Tailwind CSS · JavaScript
+              </p>
+            </div>
+          </article>
+
+          <article class="project-card reveal rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-lg">
+            <div class="h-40 bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-6xl">
+              📊
+            </div>
+            <div class="p-6">
+              <h3 class="text-xl font-bold">Sales Analytics Dashboard</h3>
+              <p class="mt-3 text-slate-600 dark:text-slate-300 leading-6">
+                A proposed dashboard concept for studying sales trends,
+                product performance and business data.
+              </p>
+              <p class="text-sm text-violet-600 dark:text-violet-400 mt-4">
+                Data Analysis · SQL · Visualization
+              </p>
+            </div>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT PAGE -->
+    <section id="contact" class="py-20 bg-white dark:bg-slate-900">
+      <div class="max-w-4xl mx-auto px-6">
+
+        <div class="text-center mb-12 reveal">
+          <p class="text-violet-600 font-semibold">LET'S CONNECT</p>
+          <h2 class="text-4xl font-bold mt-2">Contact Me</h2>
+          <p class="mt-4 text-slate-600 dark:text-slate-300">
+            Feel free to contact me for opportunities or collaboration.
+          </p>
+        </div>
+
+        <div class="max-w-xl mx-auto rounded-2xl p-7 bg-slate-50 dark:bg-slate-800 shadow-sm reveal">
+
+          <div class="space-y-5">
+            <div>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Email</p>
+              <a href="mailto:chaudharidarshana484@gmail.com"
+                class="font-semibold hover:text-violet-500 break-all">
+                chaudharidarshana484@gmail.com
+              </a>
+            </div>
+
+            <div>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Location</p>
+              <p class="font-semibold">Nashik, Maharashtra, India</p>
+            </div>
+
+            <div>
+              <p class="text-sm text-slate-500 dark:text-slate-400">LinkedIn</p>
+              <a href="https://www.linkedin.com/"
+                target="_blank" rel="noopener noreferrer"
+                class="font-semibold text-violet-600 hover:underline">
+                Add your LinkedIn profile link
+              </a>
+            </div>
+          </div>
+
+          <form id="contactForm" class="mt-8 space-y-4">
+            <div>
+              <label for="name" class="block mb-2 font-medium">Your Name</label>
+              <input id="name" name="name" required
+                class="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-900 outline-none focus:ring-2 focus:ring-violet-500"
+                placeholder="Enter your name">
+            </div>
+
+            <div>
+              <label for="email" class="block mb-2 font-medium">Your Email</label>
+              <input id="email" name="email" type="email" required
+                class="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-900 outline-none focus:ring-2 focus:ring-violet-500"
+                placeholder="Enter your email">
+            </div>
+
+            <div>
+              <label for="message" class="block mb-2 font-medium">Message</label>
+              <textarea id="message" name="message" rows="4" required
+                class="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-900 outline-none focus:ring-2 focus:ring-violet-500"
+                placeholder="Write your message"></textarea>
+            </div>
+
+            <button type="submit"
+              class="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold py-3 rounded-lg transition">
+              Send Message
+            </button>
+
+            <p id="formMessage" class="text-sm text-center" role="status"></p>
+          </form>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="text-center py-6 bg-slate-100 dark:bg-slate-950">
+    <p class="text-sm text-slate-600 dark:text-slate-400">
+      © <span id="year"></span> Darshana Chaudhari. All rights reserved.
+    </p>
+    <a href="#home" class="inline-block mt-2 text-violet-600 hover:underline">
+      Back to top ↑
+    </a>
+  </footer>
+
+  <script>
+    // Current year
+    document.getElementById("year").textContent =
+      new Date().getFullYear();
+
+    // Mobile navigation
+    const menuBtn = document.getElementById("menuBtn");
+    const mobileMenu = document.getElementById("mobileMenu");
+
+    menuBtn.addEventListener("click", () => {
+      mobileMenu.classList.toggle("hidden");
+    });
+
+    mobileMenu.querySelectorAll("a").forEach(link => {
+      link.addEventListener("click", () => {
+        mobileMenu.classList.add("hidden");
+      });
+    });
+
+    // Dark / light mode
+    const themeBtn = document.getElementById("themeBtn");
+
+    themeBtn.addEventListener("click", () => {
+      document.documentElement.classList.toggle("dark");
+
+      const darkMode =
+        document.documentElement.classList.contains("dark");
+
+      themeBtn.textContent = darkMode ? "☀️" : "🌙";
+    });
+
+    // Scroll reveal animation
+    const revealObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("visible");
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 });
+
+    document.querySelectorAll(".reveal").forEach(element => {
+      revealObserver.observe(element);
+    });
+
+    // Contact form validation
+    // This demo validates input but does not send or store messages.
+    const contactForm = document.getElementById("contactForm");
+    const formMessage = document.getElementById("formMessage");
+
+    contactForm.addEventListener("submit", event => {
+      event.preventDefault();
+
+      if (!contactForm.checkValidity()) {
+        contactForm.reportValidity();
+        return;
+      }
+
+      formMessage.textContent =
+        "Form validated successfully! This demo does not send messages yet.";
+      formMessage.className =
+        "text-sm text-center text-green-600";
+
+      contactForm.reset();
+    });
+  </script>
+
+</body>
+</html>

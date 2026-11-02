@@ -63,16 +63,19 @@ model Kitchen {
   updatedAt DateTime @updatedAt
 
   // Relations
-  users          User[]
-  menuCategories MenuCategory[]
-  menuItems      MenuItem[]
-  orders         Order[]
-  ingredients    Ingredient[]
-  suppliers      Supplier[]
-  customers      Customer[]
-  wasteLog       WasteLog[]
-  demandForecasts DemandForecast[]
-  auditLogs      AuditLog[]
+  users                User[]
+  menuCategories       MenuCategory[]
+  menuItems            MenuItem[]
+  orders               Order[]
+  ingredients          Ingredient[]
+  suppliers            Supplier[]
+  customers            Customer[]
+  wasteLog             WasteLog[]
+  demandForecasts      DemandForecast[]
+  auditLogs            AuditLog[]
+  recipes              Recipe[]
+  platformCostSettings PlatformCostSetting[]
+  modelEvaluations     ModelEvaluation[]
 
   @@map("kitchens")
 }
@@ -136,40 +139,85 @@ model MenuItem {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  kitchen       Kitchen      @relation(fields: [kitchenId], references: [id])
-  category      MenuCategory @relation(fields: [categoryId], references: [id])
-  orderItems    OrderItem[]
-  demandForecasts DemandForecast[]
-  recommendations Recommendation[]
-  pricingSuggestions PricingSuggestion[]
+  kitchen             Kitchen             @relation(fields: [kitchenId], references: [id])
+  category            MenuCategory        @relation(fields: [categoryId], references: [id])
+  orderItems          OrderItem[]
+  demandForecasts     DemandForecast[]
+  recommendations     Recommendation[]
+  pricingSuggestions  PricingSuggestion[]
+  recipe              Recipe?
+  wasteLogs           WasteLog[]
 
   @@index([kitchenId])
   @@index([categoryId])
   @@map("menu_items")
 }
 
+// ─── RECIPES & INGREDIENT BOM ─────────────────────────────────────────────────
+
+model Recipe {
+  id               String       @id @default(cuid())
+  kitchenId        String
+  menuItemId       String       @unique
+  yieldServings    Int          @default(1)
+  prepInstructions String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  kitchen          Kitchen      @relation(fields: [kitchenId], references: [id])
+  menuItem         MenuItem     @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  items            RecipeItem[]
+
+  @@index([kitchenId])
+  @@map("recipes")
+}
+
+model RecipeItem {
+  id           String     @id @default(cuid())
+  recipeId     String
+  ingredientId String
+  quantity     Float      // required quantity per serving
+  unit         String     // kg, litre, pieces, grams
+
+  recipe       Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@unique([recipeId, ingredientId])
+  @@map("recipe_items")
+}
+
 // ─── ORDERS ───────────────────────────────────────────────────────────────────
 
 model Order {
-  id            String      @id @default(cuid())
-  kitchenId     String
-  customerId    String?
-  createdById   String?
-  orderNumber   String      @unique
-  status        OrderStatus @default(PENDING)
-  subtotal      Float
-  tax           Float       @default(0)
-  discount      Float       @default(0)
-  total         Float
-  deliveryAddress String?
-  notes         String?
-  estimatedTime Int?        // minutes
-  placedAt      DateTime    @default(now())
-  confirmedAt   DateTime?
-  preparedAt    DateTime?
-  deliveredAt   DateTime?
-  cancelledAt   DateTime?
-  updatedAt     DateTime    @updatedAt
+  id                     String      @id @default(cuid())
+  kitchenId              String
+  customerId             String?
+  createdById            String?
+  orderNumber            String      @unique
+  status                 OrderStatus @default(PENDING)
+  orderSource            String      @default("DIRECT") // DIRECT, SWIGGY, ZOMATO
+  paymentMethod          String      @default("COD")    // COD, ONLINE_SIMULATED
+  paymentStatus          String      @default("PENDING")// PENDING, COMPLETED, REFUNDED
+  subtotal               Float
+  tax                    Float       @default(0)
+  discount               Float       @default(0)
+  total                  Float
+  deliveryAddress        String?
+  notes                  String?
+  estimatedTime          Int?        // minutes
+  stockDeducted          Boolean     @default(false)
+  channelCommission      Float       @default(0)
+  estimatedPackagingCost Float       @default(0)
+  estimatedIngredientCost Float      @default(0)
+  cancellationReason     String?
+  rating                 Int?
+  feedbackComment        String?
+  placedAt               DateTime    @default(now())
+  confirmedAt            DateTime?
+  preparedAt             DateTime?
+  deliveredAt            DateTime?
+  cancelledAt            DateTime?
+  updatedAt              DateTime    @updatedAt
 
   kitchen    Kitchen     @relation(fields: [kitchenId], references: [id])
   customer   Customer?   @relation(fields: [customerId], references: [id])
@@ -240,22 +288,23 @@ model Feedback {
 // ─── INVENTORY ────────────────────────────────────────────────────────────────
 
 model Ingredient {
-  id             String   @id @default(cuid())
-  kitchenId      String
-  name           String
-  unit           String   // kg, litre, pieces, etc.
-  currentStock   Float    @default(0)
-  reorderLevel   Float    @default(0)
-  reorderQuantity Float   @default(0)
-  costPerUnit    Float    @default(0)
-  category       String?  // Vegetables, Dairy, Spices, etc.
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String   @id @default(cuid())
+  kitchenId       String
+  name            String
+  unit            String   // kg, litre, pieces, etc.
+  currentStock    Float    @default(0)
+  reorderLevel    Float    @default(0)
+  reorderQuantity Float    @default(0)
+  costPerUnit     Float    @default(0)
+  category        String?  // Vegetables, Dairy, Spices, Meat, Grains, Oils
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  kitchen              Kitchen               @relation(fields: [kitchenId], references: [id])
+  kitchen               Kitchen                 @relation(fields: [kitchenId], references: [id])
   inventoryTransactions InventoryTransaction[]
-  wasteLogs            WasteLog[]
+  wasteLogs             WasteLog[]
+  recipeItems           RecipeItem[]
 
   @@index([kitchenId])
   @@map("ingredients")
@@ -281,16 +330,21 @@ model InventoryTransaction {
 }
 
 model WasteLog {
-  id           String   @id @default(cuid())
-  kitchenId    String
-  ingredientId String
-  quantity     Float
-  reason       String?  // Over-preparation, Expired, Spilled, etc.
+  id            String   @id @default(cuid())
+  kitchenId     String
+  ingredientId  String?
+  menuItemId    String?
+  itemType      String   @default("INGREDIENT") // INGREDIENT or DISH
+  itemName      String?
+  quantity      Float
+  unit          String   @default("kg")
+  reason        String?  // Over-preparation, Expired, Spilled, etc.
   estimatedCost Float?
-  loggedAt     DateTime @default(now())
+  loggedAt      DateTime @default(now())
 
-  kitchen    Kitchen    @relation(fields: [kitchenId], references: [id])
-  ingredient Ingredient @relation(fields: [ingredientId], references: [id])
+  kitchen    Kitchen     @relation(fields: [kitchenId], references: [id])
+  ingredient Ingredient? @relation(fields: [ingredientId], references: [id])
+  menuItem   MenuItem?   @relation(fields: [menuItemId], references: [id])
 
   @@index([kitchenId])
   @@index([loggedAt])
@@ -300,17 +354,17 @@ model WasteLog {
 // ─── SUPPLIERS ────────────────────────────────────────────────────────────────
 
 model Supplier {
-  id        String   @id @default(cuid())
-  kitchenId String
-  name      String
+  id            String   @id @default(cuid())
+  kitchenId     String
+  name          String
   contactPerson String?
-  email     String?
-  phone     String?
-  address   String?
-  rating    Float    @default(0)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  email         String?
+  phone         String?
+  address       String?
+  rating        Float    @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   kitchen        Kitchen         @relation(fields: [kitchenId], references: [id])
   purchaseOrders PurchaseOrder[]
@@ -361,11 +415,11 @@ model DemandForecast {
   forecastDate DateTime
   predictedQty Float
   actualQty    Float?
-  modelUsed    String   // random_forest, xgboost, lstm, prophet, lightgbm
+  modelUsed    String   // seasonal_naive, random_forest, gradient_boosting
   mae          Float?
   rmse         Float?
   confidence   Float?
-  features     Json?    // feature values used
+  features     Json?
   createdAt    DateTime @default(now())
 
   kitchen  Kitchen   @relation(fields: [kitchenId], references: [id])
@@ -407,6 +461,52 @@ model Recommendation {
 
   @@index([customerId])
   @@map("recommendations")
+}
+
+// ─── PLATFORM COST SETTINGS (SWIGGY/ZOMATO) ───────────────────────────────────
+
+model PlatformCostSetting {
+  id                String   @id @default(cuid())
+  kitchenId         String
+  platform          String   // DIRECT, SWIGGY, ZOMATO, OTHERS
+  commissionRate    Float    @default(0.0) // percentage e.g. 18.0
+  deliveryFee       Float    @default(0.0)
+  packagingCharge   Float    @default(15.0)
+  paymentGatewayFee Float    @default(2.0)
+  fixedFeePerOrder  Float    @default(0.0)
+  gstPercentage     Float    @default(5.0)
+  isActive          Boolean  @default(true)
+  updatedAt         DateTime @updatedAt
+
+  kitchen           Kitchen  @relation(fields: [kitchenId], references: [id])
+
+  @@unique([kitchenId, platform])
+  @@map("platform_cost_settings")
+}
+
+// ─── RESEARCH / MODEL EVALUATIONS ─────────────────────────────────────────────
+
+model ModelEvaluation {
+  id              String   @id @default(cuid())
+  kitchenId       String
+  modelName       String   // Seasonal-Naive Baseline, Random Forest Regressor, Gradient Boosting Regressor
+  datasetSize     Int
+  trainSplitRatio Float    @default(0.8)
+  mae             Float
+  rmse            Float
+  mape            Float?
+  r2              Float?
+  featureCount    Int      @default(6)
+  horizonDays     Int      @default(7)
+  isBestModel     Boolean  @default(false)
+  evaluatedAt     DateTime @default(now())
+  parameters      Json?
+
+  kitchen         Kitchen  @relation(fields: [kitchenId], references: [id])
+
+  @@index([kitchenId])
+  @@index([evaluatedAt])
+  @@map("model_evaluations")
 }
 
 // ─── AUDIT LOG ────────────────────────────────────────────────────────────────

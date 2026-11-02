@@ -17,7 +17,8 @@ export function useRealtime() {
     if (!user?.kitchenId) return;
 
     // Connect to SSE stream
-    const url = `http://localhost:5000/api/stream?kitchenId=${user.kitchenId}&userId=${user.email}`;
+    const apiBase = (import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace("/api", "");
+    const url = `${apiBase}/api/stream?kitchenId=${user.kitchenId}&userId=${user.email}`;
     const eventSource = new EventSource(url);
     eventSourceRef.current = eventSource;
 

@@ -2,14 +2,21 @@ const prisma = require('../utils/prisma');
 const sseService = require('../services/sse.service');
 const asyncHandler = require('../utils/asyncHandler');
 
+// Helper to get kitchen ID safely
+const getKitchenId = async (req) => {
+  if (req.user && req.user.kitchenId) return req.user.kitchenId;
+  const firstKitchen = await prisma.kitchen.findFirst();
+  return firstKitchen ? firstKitchen.id : null;
+};
+
 // @desc    Get all suppliers
 // @route   GET /api/suppliers
 // @access  Private
 const getSuppliers = asyncHandler(async (req, res) => {
-  const kitchenId = req.user.kitchenId;
+  const kitchenId = await getKitchenId(req);
   const { search } = req.query;
 
-  const suppliers = await prisma.supplier.findMany({
+  const rawSuppliers = await prisma.supplier.findMany({
     where: {
       kitchenId,
       isActive: true,
@@ -17,12 +24,22 @@ const getSuppliers = asyncHandler(async (req, res) => {
     },
     include: {
       purchaseOrders: {
-        where: { status: { in: ['PENDING', 'ORDERED'] } },
-        select: { id: true, status: true, totalAmount: true, expectedDelivery: true }
+        where: { status: { in: ['DRAFT', 'SENT', 'CONFIRMED'] } },
+        select: { id: true, status: true, total: true, expectedAt: true }
       }
     },
     orderBy: { name: 'asc' }
   });
+
+  // Map to frontend-friendly fields
+  const suppliers = rawSuppliers.map(s => ({
+    ...s,
+    purchaseOrders: s.purchaseOrders?.map(po => ({
+      ...po,
+      totalAmount: po.total,
+      expectedDelivery: po.expectedAt
+    })) || []
+  }));
 
   res.json(suppliers);
 });
@@ -31,8 +48,8 @@ const getSuppliers = asyncHandler(async (req, res) => {
 // @route   POST /api/suppliers
 // @access  Private
 const createSupplier = asyncHandler(async (req, res) => {
-  const kitchenId = req.user.kitchenId;
-  const { name, contactPerson, email, phone, address } = req.body;
+  const kitchenId = await getKitchenId(req);
+  const { name, contactPerson, contactName, email, phone, address } = req.body;
 
   if (!name) {
     res.status(400);
@@ -49,7 +66,14 @@ const createSupplier = asyncHandler(async (req, res) => {
   }
 
   const supplier = await prisma.supplier.create({
-    data: { kitchenId, name, contactPerson, email, phone, address }
+    data: {
+      kitchenId,
+      name,
+      contactPerson: contactPerson || contactName || null,
+      email: email || null,
+      phone: phone || null,
+      address: address || null
+    }
   });
 
   sseService.broadcast('SUPPLIER_UPDATED', { action: 'CREATED', data: supplier }, kitchenId);
@@ -60,9 +84,15 @@ const createSupplier = asyncHandler(async (req, res) => {
 // @route   PUT /api/suppliers/:id
 // @access  Private
 const updateSupplier = asyncHandler(async (req, res) => {
-  const kitchenId = req.user.kitchenId;
+  const kitchenId = await getKitchenId(req);
   const { id } = req.params;
   const updates = req.body;
+
+  // Normalize contactPerson if sent as contactName
+  if (updates.contactName && !updates.contactPerson) {
+    updates.contactPerson = updates.contactName;
+    delete updates.contactName;
+  }
 
   const supplier = await prisma.supplier.update({
     where: { id, kitchenId },
@@ -77,7 +107,7 @@ const updateSupplier = asyncHandler(async (req, res) => {
 // @route   DELETE /api/suppliers/:id
 // @access  Private
 const deleteSupplier = asyncHandler(async (req, res) => {
-  const kitchenId = req.user.kitchenId;
+  const kitchenId = await getKitchenId(req);
   const { id } = req.params;
 
   await prisma.supplier.update({
@@ -93,21 +123,33 @@ const deleteSupplier = asyncHandler(async (req, res) => {
 // @route   GET /api/suppliers/purchase-orders
 // @access  Private
 const getPurchaseOrders = asyncHandler(async (req, res) => {
-  const kitchenId = req.user.kitchenId;
+  const kitchenId = await getKitchenId(req);
   const pos = await prisma.purchaseOrder.findMany({
-    where: { kitchenId },
-    include: { supplier: { select: { id: true, name: true } } },
-    orderBy: { createdAt: 'desc' },
+    where: {
+      supplier: { kitchenId }
+    },
+    include: {
+      supplier: { select: { id: true, name: true } },
+      items: true
+    },
+    orderBy: { orderedAt: 'desc' },
     take: 50,
   });
-  res.json(pos);
+
+  const formatted = pos.map(p => ({
+    ...p,
+    totalAmount: p.total,
+    expectedDelivery: p.expectedAt
+  }));
+
+  res.json(formatted);
 });
 
 // @desc    Create a purchase order
 // @route   POST /api/suppliers/purchase-orders
 // @access  Private
 const createPurchaseOrder = asyncHandler(async (req, res) => {
-  const kitchenId = req.user.kitchenId;
+  const kitchenId = await getKitchenId(req);
   const { supplierId, items, expectedDelivery, notes } = req.body;
 
   if (!supplierId || !items?.length) {
@@ -115,22 +157,25 @@ const createPurchaseOrder = asyncHandler(async (req, res) => {
     throw new Error('Supplier and at least one item are required');
   }
 
-  const totalAmount = items.reduce((s, i) => s + (parseFloat(i.unitPrice) * parseInt(i.quantity)), 0);
+  const totalAmount = items.reduce((s, i) => s + (parseFloat(i.pricePerUnit || i.unitPrice || 0) * parseFloat(i.quantity || 1)), 0);
+  const count = await prisma.purchaseOrder.count();
+  const orderNumber = `PO-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${String(count + 1).padStart(4, '0')}`;
 
   const po = await prisma.purchaseOrder.create({
     data: {
-      kitchenId,
       supplierId,
-      totalAmount,
-      expectedDelivery: expectedDelivery ? new Date(expectedDelivery) : null,
-      notes,
-      status: 'PENDING',
+      orderNumber,
+      total: parseFloat(totalAmount.toFixed(2)),
+      expectedAt: expectedDelivery ? new Date(expectedDelivery) : null,
+      notes: notes || null,
+      status: 'SENT',
       items: {
         create: items.map(i => ({
-          ingredientId: i.ingredientId,
-          quantity:     parseFloat(i.quantity),
-          unitPrice:    parseFloat(i.unitPrice),
-          totalPrice:   parseFloat(i.quantity) * parseFloat(i.unitPrice),
+          ingredientName: i.ingredientName || i.name || 'Raw Ingredient',
+          quantity:     parseFloat(i.quantity || 1),
+          unit:         i.unit || 'kg',
+          pricePerUnit: parseFloat(i.pricePerUnit || i.unitPrice || 0),
+          total:        parseFloat(((parseFloat(i.pricePerUnit || i.unitPrice || 0)) * (parseFloat(i.quantity || 1))).toFixed(2)),
         }))
       }
     },
@@ -141,7 +186,18 @@ const createPurchaseOrder = asyncHandler(async (req, res) => {
   });
 
   sseService.broadcast('SUPPLIER_UPDATED', { action: 'PO_CREATED', data: po }, kitchenId);
-  res.status(201).json(po);
+  res.status(201).json({
+    ...po,
+    totalAmount: po.total,
+    expectedDelivery: po.expectedAt
+  });
 });
 
-module.exports = { getSuppliers, createSupplier, updateSupplier, deleteSupplier, getPurchaseOrders, createPurchaseOrder };
+module.exports = {
+  getSuppliers,
+  createSupplier,
+  updateSupplier,
+  deleteSupplier,
+  getPurchaseOrders,
+  createPurchaseOrder
+};

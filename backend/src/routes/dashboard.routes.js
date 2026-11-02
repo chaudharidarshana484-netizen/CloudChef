@@ -1,4 +1,14 @@
-const express = require('express');
+﻿const express = require("express");
 const router = express.Router();
-router.get('/', (req, res) => res.json({ message: 'Dashboard endpoint pending' }));
+const c = require("../controllers/dashboard.controller");
+const { protectAdmin } = require("../middleware/auth.middleware");
+
+router.get("/stats",               protectAdmin, c.getStats);
+router.get("/revenue",             protectAdmin, c.getRevenueTrend);
+router.get("/peak-hours",          protectAdmin, c.getPeakHours);
+router.get("/top-dishes",          protectAdmin, c.getTopDishes);
+router.get("/profitability",       protectAdmin, c.getProfitability);
+router.get("/reports",             protectAdmin, c.getReportData);
+router.post("/platform-settings",  protectAdmin, c.updatePlatformSettings);
+
 module.exports = router;

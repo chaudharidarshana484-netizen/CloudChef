@@ -3,12 +3,7 @@ const sseService = require('../services/sse.service');
 
 const router = express.Router();
 
-/**
- * @route   GET /api/stream
- * @desc    Establish SSE connection for real-time updates
- * @access  Public (in a real app, this should be protected via token in query params or cookie)
- */
-router.get('/', (req, res) => {
+const handleSseConnection = (req, res) => {
   const kitchenId = req.query.kitchenId || 'default';
   const userId = req.query.userId || 'anonymous';
   const clientId = `${kitchenId}_${userId}_${Date.now()}`;
@@ -18,7 +13,7 @@ router.get('/', (req, res) => {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache, no-transform',
     'Connection': 'keep-alive',
-    'Access-Control-Allow-Origin': '*', // Adjust according to CORS policy
+    'Access-Control-Allow-Origin': '*',
   });
 
   // Initial connection message
@@ -30,6 +25,9 @@ router.get('/', (req, res) => {
   req.on('close', () => {
     // Client disconnected handled in sseService
   });
-});
+};
+
+router.get('/', handleSseConnection);
+router.get('/kitchen', handleSseConnection);
 
 module.exports = router;

@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Users, Search, Plus, Mail, Phone, Star, 
-  TrendingUp, Loader2, Edit2, Trash2, X, ChevronDown
+  TrendingUp, Loader2, Edit2, Trash2, X, ChevronDown,
+  ShoppingBag, Eye, Clock, CheckCircle2
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -108,6 +109,102 @@ function ConfirmDelete({ customer, onClose, onConfirm, isDeleting }) {
   );
 }
 
+// ─── View Customer Orders Modal ──────────────────────────────────────────────
+function CustomerOrdersModal({ customer, onClose }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["customerOrders", customer?.id],
+    queryFn: () => customerService.getOrders(customer.id),
+    enabled: !!customer?.id
+  });
+
+  if (!customer) return null;
+  const orders = data?.data?.orders || [];
+
+  return (
+    <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="card p-6 w-full max-w-2xl max-h-[85vh] flex flex-col space-y-4 shadow-2xl border border-white/10"
+      >
+        <div className="flex items-center justify-between border-b border-white/5 pb-3">
+          <div>
+            <h3 className="font-bold text-white text-lg flex items-center gap-2">
+              <ShoppingBag size={18} className="text-brand-500" />
+              Orders by {customer.name}
+            </h3>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Phone: {customer.phone || "—"} • {customer.address || "No address saved"}
+            </p>
+          </div>
+          <button onClick={onClose} className="btn-ghost p-1.5 rounded-lg text-gray-400 hover:text-white">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-white/5 border border-white/5 rounded-xl p-3 text-center">
+            <span className="text-[11px] text-gray-400 block">Total Orders</span>
+            <span className="text-lg font-bold text-white">{customer.totalOrders || orders.length}</span>
+          </div>
+          <div className="bg-white/5 border border-white/5 rounded-xl p-3 text-center">
+            <span className="text-[11px] text-gray-400 block">Total Spent</span>
+            <span className="text-lg font-bold text-brand-400">₹{(customer.totalSpent || 0).toLocaleString("en-IN")}</span>
+          </div>
+          <div className="bg-white/5 border border-white/5 rounded-xl p-3 text-center">
+            <span className="text-[11px] text-gray-400 block">Loyalty Points</span>
+            <span className="text-lg font-bold text-yellow-400">{customer.loyaltyPoints || 0} pts</span>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 max-h-[45vh]">
+          {isLoading ? (
+            <div className="py-12 flex flex-col items-center justify-center text-gray-500 gap-2">
+              <Loader2 size={24} className="animate-spin text-brand-500" />
+              <p className="text-xs">Fetching order history...</p>
+            </div>
+          ) : orders.length === 0 ? (
+            <div className="py-12 text-center text-gray-500 text-sm">
+              No orders found for this customer yet.
+            </div>
+          ) : (
+            orders.map(order => (
+              <div key={order.id} className="p-3.5 rounded-xl bg-white/5 border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white text-sm font-mono">{order.orderNumber}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-brand-500/10 text-brand-400 border border-brand-500/20">
+                      {order.status}
+                    </span>
+                    <span className="text-[10px] text-gray-400 bg-white/5 px-1.5 py-0.5 rounded">
+                      {order.orderSource}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-300 mt-1">
+                    {order.items?.map(it => `${it.quantity}× ${it.menuItem?.name || 'Dish'}`).join(", ")}
+                  </div>
+                  <span className="text-[11px] text-gray-500 mt-1 block">
+                    {new Date(order.placedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                  </span>
+                </div>
+                <div className="text-right sm:flex-shrink-0">
+                  <span className="text-base font-bold text-white">₹{order.total?.toFixed(0)}</span>
+                  <span className="text-[11px] text-gray-400 block capitalize">{order.paymentMethod?.toLowerCase()}</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="pt-3 border-t border-white/5 flex justify-end">
+          <button onClick={onClose} className="btn-secondary px-5">Close</button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Customers Page ───────────────────────────────────────────────────────────
 export default function Customers() {
   const queryClient = useQueryClient();
@@ -116,6 +213,7 @@ export default function Customers() {
   const [addOpen, setAddOpen]     = useState(false);
   const [editItem, setEditItem]   = useState(null);
   const [deleteItem, setDeleteItem] = useState(null);
+  const [viewOrdersCustomer, setViewOrdersCustomer] = useState(null);
   const [isSaving, setIsSaving]   = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -333,14 +431,26 @@ export default function Customers() {
                       <td className="table-cell">
                         <div className="flex items-center gap-1">
                           <button
+                            onClick={() => setViewOrdersCustomer(c)}
+                            className="btn-ghost p-1.5 rounded-lg text-brand-400 hover:text-brand-300"
+                            title="View Customer Orders"
+                            aria-label={`View ${c.name}'s orders`}
+                          >
+                            <ShoppingBag size={14} />
+                          </button>
+                          <button
                             onClick={() => { setEditItem(c); setAddOpen(true); }}
-                            className="btn-ghost p-1.5 rounded-lg" aria-label={`Edit ${c.name}`}
+                            className="btn-ghost p-1.5 rounded-lg"
+                            title="Edit Customer"
+                            aria-label={`Edit ${c.name}`}
                           >
                             <Edit2 size={14} />
                           </button>
                           <button
                             onClick={() => setDeleteItem(c)}
-                            className="btn-ghost p-1.5 rounded-lg text-red-400 hover:text-red-300" aria-label={`Delete ${c.name}`}
+                            className="btn-ghost p-1.5 rounded-lg text-red-400 hover:text-red-300"
+                            title="Delete Customer"
+                            aria-label={`Delete ${c.name}`}
                           >
                             <Trash2 size={14} />
                           </button>
@@ -364,6 +474,15 @@ export default function Customers() {
             initial={editItem || EMPTY_FORM}
             onSave={handleSave}
             isSaving={isSaving}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {viewOrdersCustomer && (
+          <CustomerOrdersModal
+            customer={viewOrdersCustomer}
+            onClose={() => setViewOrdersCustomer(null)}
           />
         )}
       </AnimatePresence>

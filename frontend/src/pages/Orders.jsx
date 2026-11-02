@@ -2,29 +2,34 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShoppingBag, Clock, CheckCircle2, XCircle, ChevronDown,
-  Search, RefreshCw, Truck, Plus, Loader2, AlertTriangle
+  Search, RefreshCw, Truck, Plus, Loader2, AlertTriangle, ExternalLink
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { orderService } from "../services/api";
 import { EmptyState, ErrorState } from "../components/ui/EmptyState";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
-  PENDING:   { label: "Pending",   badge: "badge-warning", icon: Clock,        bg: "border-yellow-500/30 bg-yellow-500/5" },
-  PREPARING: { label: "Preparing", badge: "badge-brand",   icon: RefreshCw,    bg: "border-brand-500/30 bg-brand-500/5"   },
-  READY:     { label: "Ready",     badge: "badge-info",    icon: CheckCircle2, bg: "border-blue-500/30 bg-blue-500/5"     },
-  DELIVERED: { label: "Delivered", badge: "badge-success", icon: Truck,        bg: "border-green-500/30 bg-green-500/5"   },
-  CANCELLED: { label: "Cancelled", badge: "badge-danger",  icon: XCircle,      bg: "border-red-500/30 bg-red-500/5"       },
+  PENDING:          { label: "Pending",          badge: "badge-warning", icon: Clock,        bg: "border-yellow-500/30 bg-yellow-500/5" },
+  CONFIRMED:        { label: "Accepted",         badge: "badge-info",    icon: CheckCircle2, bg: "border-blue-500/30 bg-blue-500/5"     },
+  PREPARING:        { label: "Preparing",        badge: "badge-brand",   icon: RefreshCw,    bg: "border-brand-500/30 bg-brand-500/5"   },
+  READY:            { label: "Ready for Pickup", badge: "badge-info",    icon: CheckCircle2, bg: "border-blue-500/30 bg-blue-500/5"     },
+  OUT_FOR_DELIVERY: { label: "Out for Delivery", badge: "badge-brand",   icon: Truck,        bg: "border-orange-500/30 bg-orange-500/5" },
+  DELIVERED:        { label: "Delivered",        badge: "badge-success", icon: Truck,        bg: "border-green-500/30 bg-green-500/5"   },
+  CANCELLED:        { label: "Cancelled",        badge: "badge-danger",  icon: XCircle,      bg: "border-red-500/30 bg-red-500/5"       },
 };
 
 const NEXT_STATUS = {
-  PENDING:   "PREPARING",
-  PREPARING: "READY",
-  READY:     "DELIVERED",
+  PENDING:          "CONFIRMED",
+  CONFIRMED:        "PREPARING",
+  PREPARING:        "READY",
+  READY:            "OUT_FOR_DELIVERY",
+  OUT_FOR_DELIVERY: "DELIVERED",
 };
 
-const STATUS_TABS = ["All", "PENDING", "PREPARING", "READY", "DELIVERED", "CANCELLED"];
+const STATUS_TABS = ["All", "PENDING", "CONFIRMED", "PREPARING", "READY", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED"];
 
 const ORDERS_QUERY_KEY = ["orders"];
 
@@ -54,7 +59,12 @@ function OrderCard({ order, onStatusChange, isUpdating }) {
             <Icon size={16} aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <p className="font-semibold text-white text-sm truncate">{order.customer?.name || "Guest"}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-white text-sm truncate">{order.customer?.name || "Guest"}</p>
+              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-white/10 text-gray-300">
+                {order.orderSource || "DIRECT"}
+              </span>
+            </div>
             <p className="text-gray-500 text-xs font-mono">{order.orderNumber} · {
               new Date(order.placedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
             }</p>
@@ -110,16 +120,16 @@ function OrderCard({ order, onStatusChange, isUpdating }) {
                     className="btn-primary w-full py-2 text-sm flex items-center justify-center gap-2"
                   >
                     {isUpdating ? <Loader2 size={14} className="animate-spin" /> : null}
-                    Mark as {STATUS_CONFIG[next]?.label}
+                    Move to {STATUS_CONFIG[next]?.label}
                   </button>
                 )}
-                {order.status === "PENDING" && (
+                {["PENDING", "CONFIRMED"].includes(order.status) && (
                   <button
                     onClick={() => onStatusChange(order.id, "CANCELLED")}
                     disabled={isUpdating}
                     className="btn-secondary w-full py-2 text-sm text-red-400 hover:text-red-300"
                   >
-                    Cancel Order
+                    Cancel Order & Restock
                   </button>
                 )}
               </div>
@@ -134,6 +144,7 @@ function OrderCard({ order, onStatusChange, isUpdating }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function Orders() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("All");
   const [search, setSearch] = useState("");
   const [updatingId, setUpdatingId] = useState(null);
@@ -145,7 +156,7 @@ export default function Orders() {
       const { data } = await orderService.getAll();
       return Array.isArray(data) ? data : data?.orders || [];
     },
-    staleTime: 30 * 1000, // refresh every 30s (real-time via SSE)
+    staleTime: 15 * 1000,
   });
 
   // ─── Derived data ────────────────────────────────────────────────────────
@@ -168,7 +179,7 @@ export default function Orders() {
 
   const stats = useMemo(() => ({
     pending:   orders.filter(o => o.status === "PENDING").length,
-    preparing: orders.filter(o => o.status === "PREPARING").length,
+    preparing: orders.filter(o => ["CONFIRMED", "PREPARING"].includes(o.status)).length,
     ready:     orders.filter(o => o.status === "READY").length,
     revenue:   orders.filter(o => o.status === "DELIVERED").reduce((s, o) => s + (o.total || 0), 0),
   }), [orders]);
@@ -190,14 +201,15 @@ export default function Orders() {
     },
     onError: (err, vars, ctx) => {
       queryClient.setQueryData(ORDERS_QUERY_KEY, ctx.previous);
-      toast.error("Failed to update order status");
+      toast.error(err.response?.data?.error || "Failed to update order status");
     },
     onSuccess: (data, { status }) => {
-      toast.success(`Order marked as ${STATUS_CONFIG[status]?.label}`);
+      toast.success(`Order status updated to ${STATUS_CONFIG[status]?.label}`);
     },
     onSettled: () => {
       setUpdatingId(null);
       queryClient.invalidateQueries({ queryKey: ORDERS_QUERY_KEY });
+      queryClient.invalidateQueries(["inventory"]);
     },
   });
 
@@ -211,16 +223,16 @@ export default function Orders() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <ShoppingBag size={22} className="text-brand-400" /> Order Management
+            <ShoppingBag size={22} className="text-brand-400" /> Kitchen Order Queue
           </h1>
-          <p className="text-gray-500 text-sm mt-0.5">Live kitchen order queue — real-time updates</p>
+          <p className="text-gray-500 text-sm mt-0.5">Live order status progression & smart inventory consumption</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => refetch()} className="btn-secondary p-2" aria-label="Refresh orders">
             <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
           </button>
-          <button className="btn-primary flex items-center gap-2 text-sm">
-            <Plus size={15} /> New Order
+          <button onClick={() => navigate("/order")} className="btn-primary flex items-center gap-2 text-sm">
+            <Plus size={15} /> Storefront POS
           </button>
         </div>
       </div>
@@ -229,9 +241,9 @@ export default function Orders() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: "Pending",   count: stats.pending,   color: "text-yellow-400 border-yellow-500/20 bg-yellow-500/5" },
-          { label: "Preparing", count: stats.preparing, color: "text-brand-400 border-brand-500/20 bg-brand-500/5"   },
+          { label: "In Kitchen", count: stats.preparing, color: "text-brand-400 border-brand-500/20 bg-brand-500/5"   },
           { label: "Ready",     count: stats.ready,     color: "text-blue-400 border-blue-500/20 bg-blue-500/5"       },
-          { label: "Revenue",   count: `₹${stats.revenue.toLocaleString("en-IN")}`, color: "text-green-400 border-green-500/20 bg-green-500/5" },
+          { label: "Delivered Gross", count: `₹${stats.revenue.toLocaleString("en-IN")}`, color: "text-green-400 border-green-500/20 bg-green-500/5" },
         ].map(({ label, count, color }) => (
           <div key={label} className={`card border flex items-center justify-between px-4 py-3 ${color}`}>
             <span className="text-sm font-medium opacity-80">{label}</span>

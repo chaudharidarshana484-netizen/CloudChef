@@ -16,6 +16,7 @@
     "license": "ISC",
     "type": "commonjs",
     "dependencies": {
+        "@electric-sql/pglite": "^0.4.3",
         "@prisma/adapter-pg": "^7.9.1",
         "@prisma/client": "^7.9.1",
         "bcryptjs": "^3.0.3",
@@ -31,6 +32,7 @@
         "node-cron": "^4.6.0",
         "nodemailer": "^9.0.3",
         "pg": "^8.22.0",
+        "pglite-prisma-adapter": "^0.7.2",
         "prisma": "^7.9.1",
         "swagger-jsdoc": "^6.3.0",
         "swagger-ui-express": "^5.0.1",

@@ -8,10 +8,18 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { lazy, Suspense } from "react";
 import { PageLoader } from "./components/ui/Skeleton";
 
-// Pages — Auth (eager loaded)
+// Pages — Admin Auth
 import Login from "./pages/auth/Login";
 
-// Pages — Main (lazy loaded for performance)
+// Pages — Customer Auth
+const CustomerLogin = lazy(() => import("./pages/customer/CustomerLogin"));
+
+// Pages — Customer Portal (public + authenticated customer)
+const CustomerStorefront = lazy(() => import("./pages/customer/CustomerStorefront"));
+const OrderTracking      = lazy(() => import("./pages/customer/OrderTracking"));
+const MyOrders           = lazy(() => import("./pages/customer/MyOrders"));
+
+// Pages — Main Admin
 const Dashboard     = lazy(() => import("./pages/Dashboard"));
 const Orders        = lazy(() => import("./pages/Orders"));
 const Menu          = lazy(() => import("./pages/Menu"));
@@ -20,9 +28,11 @@ const Customers     = lazy(() => import("./pages/Customers"));
 const Suppliers     = lazy(() => import("./pages/Suppliers"));
 const KitchenOps    = lazy(() => import("./pages/KitchenOps"));
 const Reports       = lazy(() => import("./pages/Reports"));
+const Profitability = lazy(() => import("./pages/Profitability"));
+const Research      = lazy(() => import("./pages/Research"));
 const Settings      = lazy(() => import("./pages/Settings"));
 
-// Pages — AI (lazy loaded)
+// Pages — AI
 const DemandForecast  = lazy(() => import("./pages/ai/DemandForecast"));
 const InventoryAI     = lazy(() => import("./pages/ai/InventoryAI"));
 const WastePredictor  = lazy(() => import("./pages/ai/WastePredictor"));
@@ -30,19 +40,17 @@ const DynamicPricing  = lazy(() => import("./pages/ai/DynamicPricing"));
 const Recommendations = lazy(() => import("./pages/ai/Recommendations"));
 const NotFound        = lazy(() => import("./pages/NotFound"));
 
-// QueryClient with sensible defaults
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime:          1000 * 60 * 5,  // 5 minutes
-      gcTime:             1000 * 60 * 10, // 10 minutes
+      staleTime:          1000 * 60 * 3,
+      gcTime:             1000 * 60 * 10,
       retry:              1,
       refetchOnWindowFocus: false,
     },
   },
 });
 
-// Page-level loading fallback
 function PageSuspense({ children }) {
   return (
     <Suspense fallback={<PageLoader message="Loading page..." />}>
@@ -56,26 +64,41 @@ export default function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          {/* Auto-update page title on every route change */}
           <PageTitle />
           <Routes>
-            {/* ─── Public ─── */}
+
+            {/* ─── Customer Storefront (public access) ─── */}
+            <Route path="/order"              element={<PageSuspense><CustomerStorefront /></PageSuspense>} />
+            <Route path="/track"              element={<PageSuspense><OrderTracking /></PageSuspense>} />
+            <Route path="/track/:orderNumber" element={<PageSuspense><OrderTracking /></PageSuspense>} />
+
+            {/* ─── Customer Auth Pages ─── */}
+            <Route path="/customer/login"    element={<Navigate to="/login?role=customer" replace />} />
+            <Route path="/customer/register" element={<Navigate to="/login?role=customer" replace />} />
+
+            {/* ─── Customer Portal (requires customer login OR works as guest) ─── */}
+            <Route path="/my-orders"        element={<PageSuspense><MyOrders /></PageSuspense>} />
+            <Route path="/customer/orders" element={<Navigate to="/my-orders" replace />} />
+
+            {/* ─── Admin Auth ─── */}
             <Route path="/login" element={<Login />} />
 
-            {/* ─── Protected ─── */}
+            {/* ─── Protected Admin + Kitchen Management ─── */}
             <Route element={<ProtectedRoute />}>
               <Route element={<Layout />}>
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-                <Route path="/dashboard"  element={<PageSuspense><Dashboard /></PageSuspense>} />
-                <Route path="/orders"     element={<PageSuspense><Orders /></PageSuspense>} />
-                <Route path="/menu"       element={<PageSuspense><Menu /></PageSuspense>} />
-                <Route path="/inventory"  element={<PageSuspense><Inventory /></PageSuspense>} />
-                <Route path="/customers"  element={<PageSuspense><Customers /></PageSuspense>} />
-                <Route path="/suppliers"  element={<PageSuspense><Suppliers /></PageSuspense>} />
-                <Route path="/kitchen"    element={<PageSuspense><KitchenOps /></PageSuspense>} />
-                <Route path="/reports"    element={<PageSuspense><Reports /></PageSuspense>} />
-                <Route path="/settings"   element={<PageSuspense><Settings /></PageSuspense>} />
+                <Route path="/dashboard"     element={<PageSuspense><Dashboard /></PageSuspense>} />
+                <Route path="/orders"        element={<PageSuspense><Orders /></PageSuspense>} />
+                <Route path="/menu"          element={<PageSuspense><Menu /></PageSuspense>} />
+                <Route path="/inventory"     element={<PageSuspense><Inventory /></PageSuspense>} />
+                <Route path="/customers"     element={<PageSuspense><Customers /></PageSuspense>} />
+                <Route path="/suppliers"     element={<PageSuspense><Suppliers /></PageSuspense>} />
+                <Route path="/kitchen"       element={<PageSuspense><KitchenOps /></PageSuspense>} />
+                <Route path="/reports"       element={<PageSuspense><Reports /></PageSuspense>} />
+                <Route path="/profitability" element={<PageSuspense><Profitability /></PageSuspense>} />
+                <Route path="/research"      element={<PageSuspense><Research /></PageSuspense>} />
+                <Route path="/settings"      element={<PageSuspense><Settings /></PageSuspense>} />
 
                 {/* AI Routes */}
                 <Route path="/ai/demand"          element={<PageSuspense><DemandForecast /></PageSuspense>} />
@@ -86,11 +109,10 @@ export default function App() {
               </Route>
             </Route>
 
-            {/* ─── Catch-all 404 ─── */}
+            {/* ─── 404 ─── */}
             <Route path="*" element={<PageSuspense><NotFound /></PageSuspense>} />
           </Routes>
 
-          {/* Global Toast Notifications */}
           <Toaster
             position="bottom-right"
             gutter={8}

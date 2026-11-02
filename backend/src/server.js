@@ -21,12 +21,12 @@ app.use(morgan("dev"));
 // ─── Rate Limiting ────────────────────────────────────────────────────────────
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200,
+  max: 500,
   message: { error: "Too many requests, please try again later." },
 });
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: 50,
   message: { error: "Too many login attempts." },
 });
 app.use("/api/", limiter);
@@ -40,6 +40,7 @@ app.use("/api/menu",      require("./routes/menu.routes"));
 app.use("/api/inventory", require("./routes/inventory.routes"));
 app.use("/api/customers", require("./routes/customer.routes"));
 app.use("/api/suppliers", require("./routes/supplier.routes"));
+app.use("/api/research",  require("./routes/research.routes"));
 app.use("/api/stream",    require("./routes/sse.routes"));
 
 // ─── Health Check ─────────────────────────────────────────────────────────────

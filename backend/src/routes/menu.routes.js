@@ -1,17 +1,18 @@
-const express = require('express');
+﻿const express = require("express");
 const router = express.Router();
-const menuController = require('../controllers/menu.controller');
-const { protect } = require('../middleware/auth.middleware');
+const c = require("../controllers/menu.controller");
+const { protectAdmin } = require("../middleware/auth.middleware");
 
-router.route('/')
-  .get(protect, menuController.getMenu)
-  .post(protect, menuController.createMenuItem);
+// Public reads — customer storefront uses these
+router.get("/",              c.getMenu);
+router.get("/recipes",       c.getRecipes);
+router.get("/:id",           c.getMenuItem);
 
-router.route('/:id')
-  .put(protect, menuController.updateMenuItem)
-  .delete(protect, menuController.deleteMenuItem);
-
-router.route('/:id/restore')
-  .post(protect, menuController.restoreMenuItem);
+// Admin write operations
+router.post("/",             protectAdmin, c.createMenuItem);
+router.put("/:id",           protectAdmin, c.updateMenuItem);
+router.delete("/:id",        protectAdmin, c.deleteMenuItem);
+router.patch("/:id/availability", protectAdmin, c.toggleAvailability);
+router.post("/recipes",      protectAdmin, c.saveRecipe);
 
 module.exports = router;
